@@ -129,7 +129,6 @@ func attachWorkstation(c *cli.Context) {
 func createWokstation(c *cli.Context) {
 	name := c.Args().First()
 	dockerImage := c.Args().Get(1)
-	dockerImage = strings.Replace(dockerImage, ":", "#", 1)
 	processGuid := fmt.Sprintf("%s-%s", domain, name)
 
 	route := fmt.Sprintf("%s-%s.%s", name, domain, routeRoot)
@@ -154,16 +153,17 @@ func createWokstation(c *cli.Context) {
 			},
 		},
 		Action: &models.RunAction{
-			Path:      "/tmp/tea",
-			LogSource: "TEA",
+			Path:       "/tmp/tea",
+			LogSource:  "TEA",
+			Privileged: true,
 		},
 		Monitor: &models.RunAction{
 			Path:      "/tmp/crusher",
 			Args:      []string{"--port-check=8080"},
 			LogSource: "CRUSHER",
 		},
-		DiskMB:    128,
-		MemoryMB:  64,
+		DiskMB:    6000,
+		MemoryMB:  256,
 		Ports:     []uint32{8080},
 		Routes:    []string{route},
 		LogGuid:   processGuid,
@@ -194,8 +194,8 @@ func listWorkstations(c *cli.Context) {
 	lrps := []receptor.ActualLRPResponse{}
 
 	say.Println(0, say.Cyan("\nWorkstations:\n"))
-	say.Println(1, "Name\t\tDocker Image\t\t\tState")
-	say.Println(1, "-------------------------------------------------------------------")
+	say.Println(1, "%-30s %-40s %-30s", "Name", "Docker Image", "State")
+	say.Println(1, "----------------------------------------------------------------------------------------------------")
 
 	for _, lrp := range actualLRPs {
 		lrps = append(lrps, lrp)
@@ -207,7 +207,7 @@ func listWorkstations(c *cli.Context) {
 			state = lrps[i].State
 		}
 		name := namify(lrp.ProcessGuid)
-		say.Println(1, "%s\t\t%s\t\t%s", name, strings.Replace(lrp.RootFSPath, "#", ":", 1), say.Yellow(state))
+		say.Println(1, "%-30s %-40s %-30s", name, strings.Replace(lrp.RootFSPath, "#", ":", 1), say.Yellow(state))
 	}
 }
 
