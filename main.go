@@ -1,18 +1,98 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
+	"io"
+	"log"
+	"net"
+	"net/http"
+	"net/url"
 	"os"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/cloudfoundry-incubator/receptor"
 	"github.com/cloudfoundry-incubator/runtime-schema/models"
 	"github.com/codegangsta/cli"
+	"github.com/gorilla/websocket"
+	"github.com/pkg/term"
 )
 
 var domain = "tiego"
 var routeRoot string
 var client receptor.Client
+
+func readLoop(c *websocket.Conn, w io.Writer, done chan bool) {
+	for {
+		_, m, err := c.ReadMessage()
+		if err != nil {
+			done <- true
+			return
+		}
+
+		w.Write(m)
+	}
+}
+
+func writeLoop(c *websocket.Conn, r io.Reader, done chan bool) {
+	br := bufio.NewReader(r)
+	for {
+		x, size, err := br.ReadRune()
+		if size <= 0 || err != nil {
+			done <- true
+			return
+		}
+
+		p := make([]byte, size)
+		utf8.EncodeRune(p, x)
+
+		err = c.WriteMessage(websocket.TextMessage, p)
+		if err != nil {
+			done <- true
+			return
+		}
+	}
+}
+
+func attachWorkstation(c *cli.Context) {
+	name := c.Args().First()
+
+	route := fmt.Sprintf("ws://%s-%s.%s:80/shell", name, domain, routeRoot)
+	u, _ := url.Parse(route)
+
+	conn, err := net.Dial("tcp", u.Host)
+	if err != nil {
+		panic(err)
+	}
+
+	ws, _, err := websocket.NewClient(conn, u, http.Header{"Origin": {route}}, 1024, 1024)
+	if err != nil {
+		panic(err)
+	}
+	defer ws.Close()
+
+	var in io.Reader
+
+	term, err := term.Open(os.Stdin.Name())
+	if err == nil {
+		err = term.SetRaw()
+		if err != nil {
+			log.Fatalln("failed to set raw:", term)
+		}
+
+		defer term.Restore()
+
+		in = term
+	} else {
+		in = os.Stdin
+	}
+
+	done := make(chan bool)
+	go readLoop(ws, os.Stdout, done)
+	go writeLoop(ws, in, done)
+	<-done
+}
 
 func createWokstation(c *cli.Context) {
 	name := c.Args().First()
@@ -29,7 +109,7 @@ func createWokstation(c *cli.Context) {
 		Setup: &models.SerialAction{
 			Actions: []models.Action{
 				&models.DownloadAction{
-					From:     "https://dl.dropboxusercontent.com/u/33868236/tea.zip",
+					From:     "https://dl.dropboxusercontent.com/u/33868236/tea.tar.gz",
 					To:       "/tmp",
 					CacheKey: "tea",
 				},
@@ -81,6 +161,12 @@ func main() {
 			ShortName: "c",
 			Usage:     "creates a workstation",
 			Action:    createWokstation,
+		},
+		{
+			Name:      "attach",
+			ShortName: "a",
+			Usage:     "attach to a workstation",
+			Action:    attachWorkstation,
 		},
 	}
 	app.Run(os.Args)
