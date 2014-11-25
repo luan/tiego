@@ -211,6 +211,15 @@ func listWorkstations(c *cli.Context) {
 	}
 }
 
+func deleteWorstation(c *cli.Context) {
+	name := c.Args().First()
+	processGuid := fmt.Sprintf("%s-%s", domain, name)
+	err := client.DeleteDesiredLRP(processGuid)
+	if err != nil {
+		say.Println(0, say.Red(strings.Replace(err.Error(), "LRP", "Workstation", 1)))
+	}
+}
+
 func main() {
 	receptorAddr := os.Getenv("RECEPTOR")
 	if receptorAddr == "" {
@@ -242,6 +251,12 @@ func main() {
 			ShortName: "l",
 			Usage:     "list available workstation",
 			Action:    listWorkstations,
+		},
+		{
+			Name:      "destroy",
+			ShortName: "d",
+			Usage:     "destroy a workstation",
+			Action:    deleteWorstation,
 		},
 	}
 	app.Run(os.Args)
