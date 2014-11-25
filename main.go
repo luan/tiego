@@ -21,6 +21,7 @@ import (
 	"github.com/codegangsta/cli"
 	"github.com/gorilla/websocket"
 	"github.com/kr/pty"
+	"github.com/pivotal-cf-experimental/veritas/say"
 	"github.com/pkg/term"
 )
 
@@ -128,6 +129,7 @@ func attachWorkstation(c *cli.Context) {
 func createWokstation(c *cli.Context) {
 	name := c.Args().First()
 	dockerImage := c.Args().Get(1)
+	dockerImage = strings.Replace(dockerImage, ":", "#", 1)
 	processGuid := fmt.Sprintf("%s-%s", domain, name)
 
 	route := fmt.Sprintf("%s-%s.%s", name, domain, routeRoot)
@@ -173,6 +175,42 @@ func createWokstation(c *cli.Context) {
 	}
 }
 
+func contains(s []receptor.ActualLRPResponse, e string) int {
+	for i, a := range s {
+		if a.ProcessGuid == e {
+			return i
+		}
+	}
+	return -1
+}
+
+func namify(guid string) string {
+	return strings.Replace(guid, "tiego-", "", 1)
+}
+
+func listWorkstations(c *cli.Context) {
+	desiredLRPs, _ := client.DesiredLRPsByDomain(domain)
+	actualLRPs, _ := client.ActualLRPsByDomain(domain)
+	lrps := []receptor.ActualLRPResponse{}
+
+	say.Println(0, say.Cyan("\nWorkstations:\n"))
+	say.Println(1, "Name\t\tDocker Image\t\t\tState")
+	say.Println(1, "-------------------------------------------------------------------")
+
+	for _, lrp := range actualLRPs {
+		lrps = append(lrps, lrp)
+	}
+
+	for _, lrp := range desiredLRPs {
+		state := "STOPPED"
+		if i := contains(lrps, lrp.ProcessGuid); i >= 0 {
+			state = lrps[i].State
+		}
+		name := namify(lrp.ProcessGuid)
+		say.Println(1, "%s\t\t%s\t\t%s", name, strings.Replace(lrp.RootFSPath, "#", ":", 1), say.Yellow(state))
+	}
+}
+
 func main() {
 	receptorAddr := os.Getenv("RECEPTOR")
 	if receptorAddr == "" {
@@ -198,6 +236,12 @@ func main() {
 			ShortName: "a",
 			Usage:     "attach to a workstation",
 			Action:    attachWorkstation,
+		},
+		{
+			Name:      "list",
+			ShortName: "l",
+			Usage:     "list available workstation",
+			Action:    listWorkstations,
 		},
 	}
 	app.Run(os.Args)
