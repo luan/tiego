@@ -26,28 +26,29 @@ func createWokstation(c *cli.Context) {
 		Instances:   1,
 		Stack:       "lucid64",
 		RootFSPath:  dockerImage,
-		// Setup: &models.SerialAction{
-		// 	Actions: []models.Action{
-		// 		&models.DownloadAction{
-		// 			From:     "http://onsi-public.s3.amazonaws.com/riker.tar.gz",
-		// 			To:       "/tmp",
-		// 			CacheKey: "riker",
-		// 		},
-		// 		&models.DownloadAction{
-		// 			From:     "http://onsi-public.s3.amazonaws.com/crusher.tar.gz",
-		// 			To:       "/tmp",
-		// 			CacheKey: "crusher",
-		// 		},
-		// 	},
-		// },
-		Action: &models.RunAction{
-			Path: "echo",
+		Setup: &models.SerialAction{
+			Actions: []models.Action{
+				&models.DownloadAction{
+					From:     "https://dl.dropboxusercontent.com/u/33868236/tea.zip",
+					To:       "/tmp",
+					CacheKey: "tea",
+				},
+				&models.DownloadAction{
+					From:     "http://onsi-public.s3.amazonaws.com/crusher.tar.gz",
+					To:       "/tmp",
+					CacheKey: "crusher",
+				},
+			},
 		},
-		// Monitor: &models.RunAction{
-		// 	Path:      "/tmp/crusher",
-		// 	Args:      []string{"--port-check=8080"},
-		// 	LogSource: "CRUSHER",
-		// },
+		Action: &models.RunAction{
+			Path:      "/tmp/tea",
+			LogSource: "TEA",
+		},
+		Monitor: &models.RunAction{
+			Path:      "/tmp/crusher",
+			Args:      []string{"--port-check=8080"},
+			LogSource: "CRUSHER",
+		},
 		DiskMB:    128,
 		MemoryMB:  64,
 		Ports:     []uint32{8080},
@@ -55,6 +56,7 @@ func createWokstation(c *cli.Context) {
 		LogGuid:   processGuid,
 		LogSource: "TIEGO",
 	})
+	fmt.Println(route)
 	if err != nil {
 		panic(err)
 	}
