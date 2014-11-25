@@ -2,6 +2,8 @@ package main
 
 import (
 	"bufio"
+	"bytes"
+	"encoding/gob"
 	"fmt"
 	"io"
 	"log"
@@ -9,13 +11,16 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 	"unicode/utf8"
 
 	"github.com/cloudfoundry-incubator/receptor"
 	"github.com/cloudfoundry-incubator/runtime-schema/models"
 	"github.com/codegangsta/cli"
 	"github.com/gorilla/websocket"
+	"github.com/kr/pty"
 	"github.com/pkg/term"
 )
 
@@ -55,6 +60,21 @@ func writeLoop(c *websocket.Conn, r io.Reader, done chan bool) {
 	}
 }
 
+type Winsize struct {
+	Height uint16
+	Width  uint16
+	x      uint16
+	y      uint16
+}
+
+func resize(ws *websocket.Conn) {
+	rows, cols, _ := pty.Getsize(os.Stdin)
+	buffer := new(bytes.Buffer)
+	enc := gob.NewEncoder(buffer)
+	enc.Encode(Winsize{Height: uint16(rows), Width: uint16(cols), x: 0, y: 0})
+	ws.WriteMessage(websocket.BinaryMessage, buffer.Bytes())
+}
+
 func attachWorkstation(c *cli.Context) {
 	name := c.Args().First()
 
@@ -71,6 +91,17 @@ func attachWorkstation(c *cli.Context) {
 		panic(err)
 	}
 	defer ws.Close()
+
+	resized := make(chan os.Signal, 10)
+	signal.Notify(resized, syscall.SIGWINCH)
+
+	go func() {
+		for {
+			<-resized
+			resize(ws)
+		}
+	}()
+	resize(ws)
 
 	var in io.Reader
 
