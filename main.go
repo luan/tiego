@@ -36,6 +36,13 @@ func main() {
 				},
 			},
 		},
+		{
+			Name:      "delete",
+			ShortName: "d",
+			Usage:     "deltes a workstation",
+			Action:    commands.DeleteWokstation,
+			Args:      "<name>",
+		},
 	}
 
 	app.Run(os.Args)
