@@ -9,7 +9,7 @@ import (
 	"github.com/tmtk75/cli"
 )
 
-func DeleteWokstation(c *cli.Context) {
+func DeleteWorkstation(c *cli.Context) {
 	teapotAddr := c.GlobalString("teapot")
 	client := teapot.NewClient(teapotAddr)
 	name, _ := c.ArgFor("name")

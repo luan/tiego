@@ -26,7 +26,7 @@ func main() {
 			Name:      "create",
 			ShortName: "c",
 			Usage:     "creates a workstation",
-			Action:    commands.CreateWokstation,
+			Action:    commands.CreateWorkstation,
 			Args:      "<name>",
 			Flags: []cli.Flag{
 				cli.StringFlag{
@@ -39,8 +39,15 @@ func main() {
 		{
 			Name:      "delete",
 			ShortName: "d",
-			Usage:     "deltes a workstation",
-			Action:    commands.DeleteWokstation,
+			Usage:     "deletes a workstation",
+			Action:    commands.DeleteWorkstation,
+			Args:      "<name>",
+		},
+		{
+			Name:      "attach",
+			ShortName: "a",
+			Usage:     "attach to a workstation",
+			Action:    commands.AttachWorkstation,
 			Args:      "<name>",
 		},
 	}

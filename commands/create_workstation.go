@@ -9,7 +9,7 @@ import (
 	"github.com/tmtk75/cli"
 )
 
-func CreateWokstation(c *cli.Context) {
+func CreateWorkstation(c *cli.Context) {
 	teapotAddr := c.GlobalString("teapot")
 	client := teapot.NewClient(teapotAddr)
 	name, _ := c.ArgFor("name")
