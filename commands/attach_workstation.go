@@ -2,13 +2,19 @@ package commands
 
 import (
 	"bufio"
+	"bytes"
+	"encoding/gob"
 	"io"
 	"log"
 	"os"
+	"os/signal"
 	"regexp"
+	"syscall"
 	"unicode/utf8"
 
 	"github.com/gorilla/websocket"
+	"github.com/kr/pty"
+	"github.com/luan/tea/utils"
 	"github.com/luan/teapot"
 	"github.com/luan/tiego/say"
 	"github.com/pkg/term"
@@ -35,6 +41,17 @@ func AttachWorkstation(c *cli.Context) {
 	}
 	defer ws.Close()
 
+	resized := make(chan os.Signal, 10)
+	signal.Notify(resized, syscall.SIGWINCH)
+
+	go func() {
+		for {
+			<-resized
+			resize(ws)
+		}
+	}()
+	resize(ws)
+
 	var in io.Reader
 
 	term, err := term.Open(os.Stdin.Name())
@@ -55,6 +72,14 @@ func AttachWorkstation(c *cli.Context) {
 	go readLoop(ws, os.Stdout, done)
 	go writeLoop(ws, in, done)
 	<-done
+}
+
+func resize(ws *websocket.Conn) {
+	rows, cols, _ := pty.Getsize(os.Stdin)
+	buffer := new(bytes.Buffer)
+	enc := gob.NewEncoder(buffer)
+	enc.Encode(utils.Winsize{Height: uint16(rows), Width: uint16(cols)})
+	ws.WriteMessage(websocket.BinaryMessage, buffer.Bytes())
 }
 
 func readLoop(c *websocket.Conn, w io.Writer, done chan bool) {
