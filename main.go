@@ -37,6 +37,12 @@ func main() {
 			},
 		},
 		{
+			Name:      "list",
+			ShortName: "l",
+			Usage:     "lists all workstations",
+			Action:    commands.ListWorkstations,
+		},
+		{
 			Name:      "delete",
 			ShortName: "d",
 			Usage:     "deletes a workstation",
