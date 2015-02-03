@@ -34,6 +34,21 @@ func main() {
 					Value: "docker:///ubuntu#trusty",
 					Usage: "docker image available on hub.docker.com",
 				},
+				cli.IntFlag{
+					Name:  "cpu, c",
+					Value: 1,
+					Usage: "cpu weight allocated for workstation in mb",
+				},
+				cli.IntFlag{
+					Name:  "disk, k",
+					Value: 2048,
+					Usage: "disk space allocated for workstation in mb",
+				},
+				cli.IntFlag{
+					Name:  "memory, m",
+					Value: 256,
+					Usage: "memory allocated for workstation in mb",
+				},
 			},
 		},
 		{

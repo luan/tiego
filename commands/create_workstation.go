@@ -14,8 +14,17 @@ func CreateWorkstation(c *cli.Context) {
 	client := teapot.NewClient(teapotAddr)
 	name, _ := c.ArgFor("name")
 	dockerImage := c.String("docker-image")
+	memoryMB := c.Int("memory")
+	diskMB := c.Int("disk")
+	cpuWeight := uint(c.Int("cpu"))
 
-	err := client.CreateWorkstation(teapot.WorkstationCreateRequest{Name: name, DockerImage: dockerImage})
+	err := client.CreateWorkstation(teapot.WorkstationCreateRequest{
+		Name: name,
+		DockerImage: dockerImage,
+		MemoryMB: memoryMB,
+		DiskMB: diskMB,
+		CPUWeight: cpuWeight,
+	})
 	if err != nil {
 		say.Print(0, say.Bold(say.Red("FAILED: ")))
 		var errorMessage string
