@@ -41,7 +41,11 @@ func ListWorkstations(c *cli.Context) {
 		case "CLAIMED":
 			state = say.Yellow("%s", workstation.State)
 		case "STOPPED":
+			state = say.Gray("%s", workstation.State)
+		case "CRASHED":
 			state = say.Red("%s", workstation.State)
+		case "UNCLAIMED":
+			state = say.LightGray("%s", workstation.State)
 		}
 		say.Println(0, "%-20s %-40s %-10s", workstation.Name, workstation.DockerImage, state)
 	}
